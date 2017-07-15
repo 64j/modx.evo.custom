@@ -490,7 +490,7 @@ if (isset ($_POST['module']) || $installData) {
             $name = mysqli_real_escape_string($conn, $moduleModule[0]);
             $desc = mysqli_real_escape_string($conn, $moduleModule[1]);
             $filecontent = $moduleModule[2];
-            $properties = mysqli_real_escape_string($conn, $moduleModule[3]);
+            $properties = $moduleModule[3];
             $guid = mysqli_real_escape_string($conn, $moduleModule[4]);
             $shared = mysqli_real_escape_string($conn, $moduleModule[5]);
             $category = mysqli_real_escape_string($conn, $moduleModule[6]);
@@ -514,6 +514,7 @@ if (isset ($_POST['module']) || $installData) {
                     }
                     echo "<p>&nbsp;&nbsp;$name: <span class=\"ok\">" . $_lang['upgraded'] . "</span></p>";
                 } else {
+                    $properties = mysqli_real_escape_string($conn, parseProperties($properties, true));
                     if (!mysqli_query($sqlParser->conn, "INSERT INTO $dbase.`" . $table_prefix . "site_modules` (name,description,modulecode,properties,guid,enable_sharedparams,category) VALUES('$name','$desc','$module','$properties','$guid','$shared', $category);")) {
                         echo "<p>" . mysqli_error($sqlParser->conn) . "</p>";
                         return;
@@ -535,7 +536,7 @@ if (isset ($_POST['plugin']) || $installData) {
             $name = mysqli_real_escape_string($conn, $modulePlugin[0]);
             $desc = mysqli_real_escape_string($conn, $modulePlugin[1]);
             $filecontent = $modulePlugin[2];
-            $properties = mysqli_real_escape_string($conn, $modulePlugin[3]);
+            $properties = $modulePlugin[3];
             $events = explode(",", $modulePlugin[4]);
             $guid = mysqli_real_escape_string($conn, $modulePlugin[5]);
             $category = mysqli_real_escape_string($conn, $modulePlugin[6]);
@@ -580,6 +581,7 @@ if (isset ($_POST['plugin']) || $installData) {
                         }
                     }
                     if($insert === true) {
+                        $properties = mysqli_real_escape_string($conn, parseProperties($properties, true));
                         if(!mysqli_query($sqlParser->conn, "INSERT INTO $dbase.`".$table_prefix."site_plugins` (name,description,plugincode,properties,moduleguid,disabled,category) VALUES('$name','$desc','$plugin','$properties','$guid','0',$category);")) {
                             echo "<p>".mysqli_error($sqlParser->conn)."</p>";
                             return;
@@ -587,6 +589,7 @@ if (isset ($_POST['plugin']) || $installData) {
                     }
                     echo "<p>&nbsp;&nbsp;$name: <span class=\"ok\">" . $_lang['upgraded'] . "</span></p>";
                 } else {
+                    $properties = mysqli_real_escape_string($conn, parseProperties($properties, true));
                     if (!mysqli_query($sqlParser->conn, "INSERT INTO $dbase.`" . $table_prefix . "site_plugins` (name,description,plugincode,properties,moduleguid,category,disabled) VALUES('$name','$desc','$plugin','$properties','$guid',$category,$disabled);")) {
                         echo "<p>" . mysqli_error($sqlParser->conn) . "</p>";
                         return;
@@ -620,7 +623,7 @@ if (isset ($_POST['snippet']) || $installData) {
             $name = mysqli_real_escape_string($conn, $moduleSnippet[0]);
             $desc = mysqli_real_escape_string($conn, $moduleSnippet[1]);
             $filecontent = $moduleSnippet[2];
-            $properties = mysqli_real_escape_string($conn, $moduleSnippet[3]);
+            $properties = $moduleSnippet[3];
             $category = mysqli_real_escape_string($conn, $moduleSnippet[4]);
             if (!file_exists($filecontent))
                 echo "<p>&nbsp;&nbsp;$name: <span class=\"notok\">" . $_lang['unable_install_snippet'] . " '$filecontent' " . $_lang['not_found'] . ".</span></p>";
@@ -642,6 +645,7 @@ if (isset ($_POST['snippet']) || $installData) {
                     }
                     echo "<p>&nbsp;&nbsp;$name: <span class=\"ok\">" . $_lang['upgraded'] . "</span></p>";
                 } else {
+                    $properties = mysqli_real_escape_string($conn, parseProperties($properties, true));
                     if (!mysqli_query($sqlParser->conn, "INSERT INTO $dbase.`" . $table_prefix . "site_snippets` (name,description,snippet,properties,category) VALUES('$name','$desc','$snippet','$properties',$category);")) {
                         echo "<p>" . mysqli_error($sqlParser->conn) . "</p>";
                         return;
@@ -779,17 +783,23 @@ if ($installMode == 0) {
 function propUpdate($new,$old){
     $newArr = parseProperties($new);
     $oldArr = parseProperties($old);
-    $return = array_merge_recursive($oldArr, $newArr);
+    foreach ($oldArr as $k => $v){
+        if (isset($v['0']['options'])){
+            $oldArr[$k]['0']['options'] = $newArr[$k]['0']['options'];
+        }
+    }
+    $return = $oldArr + $newArr;
     $return = json_encode($return, JSON_UNESCAPED_UNICODE);
+    $return = ($return != '[]') ? $return : '';
     return $return;
 }
 
-function parseProperties($propertyString, $elementName = null, $elementType = null) {  
+function parseProperties($propertyString, $json=false) {   
     $propertyString = str_replace('{}', '', $propertyString ); 
     $propertyString = str_replace('} {', ',', $propertyString );
 
     if(empty($propertyString)) return array();
-    if($propertyString=='{}')  return array();
+    if($propertyString=='{}' || $propertyString=='[]') return array();
     
     $jsonFormat = isJson($propertyString, true);
     $property = array();
@@ -809,6 +819,7 @@ function parseProperties($propertyString, $elementName = null, $elementType = nu
                     case 'list-multi':
                     case 'checkbox':
                     case 'radio':
+                    case 'menu':
                         $property[$key['0']]['0']['value'] = trim($arr['3']);
                         $property[$key['0']]['0']['options'] = trim($arr['2']);
                         $property[$key['0']]['0']['default'] = trim($arr['3']);
@@ -825,6 +836,10 @@ function parseProperties($propertyString, $elementName = null, $elementType = nu
     } else if(!empty($jsonFormat)){
         $property = $jsonFormat;
     }
+    if ($json) {
+        $property = json_encode($property, JSON_UNESCAPED_UNICODE);
+    }
+    $property = ($property != '[]') ? $property : '';
     return $property;
 }
 

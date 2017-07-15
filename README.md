@@ -1,7 +1,20 @@
 Сайт сборки: http://modx.com.ua
-
 Актуальная версия: https://github.com/dmi3yy/modx.evo.custom/releases
-1.2.1-d9.1.8 (07.07.2017)
+
+1.2.2-d10 (10.07.2017)
+=======================================================
+- Next release 1.3 will be with name "Evolution CMS" in new gitHub repositories: https://github.com/evolution-cms/evolution  
+- More about new name you can read there: https://modx.com/blog/evolution-cms-has-a-new-home
+
+
+1.2.1-d9.1.9 (10.07.2017)
+=======================================================
+- [F] #1343 Init Quicksearch after Tree-Reload for all tabs
+- [F] Days allowed to manager access #568
+- [F] fix properties for instal snippet,modules,plugins
+
+
+1.2.1-d9.1.8 (08.07.2017)
 =======================================================
 - update MODxRE2_dropdown theme, refactor html form on elements and others pages
 - update FormLister
